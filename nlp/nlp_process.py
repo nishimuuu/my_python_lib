@@ -219,8 +219,8 @@ class NLPExecutor:
 
 
 if __name__ == '__main__':
-  path = '/Users/01010357/project/textio/data/next/job_listing.csv'
-  y_path = '/Users/01010357/project/textio/data/next/user_action.csv'
+  path = ''
+  y_path = ''
 
   lda_dict_path  = './lda.dict'
   lda_model_path = './lda.model'
