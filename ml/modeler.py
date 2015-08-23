@@ -13,7 +13,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.preprocessing import scale
 
 
-class Modeler:
+class Classificator:
   # dataset must be pandas::DataFrame
   def __init__(self, x_dataset, y_dataset):
     self.x_dataset = x_dataset
