@@ -18,7 +18,7 @@ from gensim.models import word2vec
 # write code here...
 
 
-class Executor:
+class NLPExecutor:
 
   #parameter to filter bow
   no_below = 10
@@ -72,7 +72,16 @@ class Executor:
 
     return resultTokens
 
-  def prepare_dictionary(self, tokens,path = None):
+  def set_tokens(self,tokens, key=None , path = None):
+    if key is None:
+      key = xrange(0, len(tokens)-1)
+    elif len(key) != len(tokens):
+      raise 'Invalid Length Erro'
+    self.dict_to_morph = {k:v for (k,v) in zip(key, tokens)}
+    self.tokens = tokens
+    self.prepare_dictionary([self.dict_to_morph[key] for key in self.dict_to_morph], path)
+
+  def prepare_dictionary(self, tokens, path = None):
     self.dictionary = gensim.corpora.Dictionary(tokens)
     if not path is None:
       self.dictionary.save_as_text(path)
@@ -104,13 +113,13 @@ class Executor:
   def aggregate_words(self,list):
     return dict(collections.Counter(list))
 
-  def lda(self, path):
+  def lda(self, path, num_topics = 200, iter=10000):
     print 'START:: lda'
-    lda = gensim.models.LdaModel(corpus=self.bow, id2word=self.dictionary,num_topics=200)
+    lda = gensim.models.LdaModel(corpus=self.bow, id2word=self.dictionary,num_topics=num_topics,iterations=iter)
     print 'FINISH:: lda'
     lda.save(path)
-    self.lda = lda
-   
+    return lda
+
   def word2vec(self,path):
     print 'START:: word2vec'
     # self.token_list = chain.from_iterable([self.dict_to_morph[token] for token in self.dict_to_morph]))
@@ -118,7 +127,10 @@ class Executor:
     model = gensim.models.Word2Vec(sentences= sentences,size=200,window=5,min_count=2)
     model.save(path)
     print 'FINISH:: word2vec'
-    self.w2v = model
+    return model
+
+  def get_tokens_dict(self):
+    return self.dict_to_morph
 
   def regression(self, target_path,save_path,regr):
     print 'START:: LogisticRegression'
@@ -166,38 +178,37 @@ class Executor:
     return regr.predict(x_)
 
 
-  def predict_topic(self, lda_model, token, need_make_bow = False, dictionary=None, n_topics = 5):
-    #if token given list
-    print token
-    if need_make_bow:
-      if dictionary is None:
-        print 'you need arguments of dictionary'
-        return None
-      token = dictionary.doc2bow(token)
 
+  def predict_topic(self, lda_model, token, dictionary=None, n_topic_words = 5):
+    np_topic_features = self.convert_topic_vec(lda_model,token)
 
-#    if not isinstance(token,list) or not isinstance(token,dict):
-#      print 'token expects list or dictionary but not'
-#      return None
-
-    #token given dictionary all patterns
-    topic_vec = lda_model[token]
-    wc_array = np.empty((len(topic_vec),2), dtype=np.object)
-    for i in xrange(len(topic_vec)):
-      wc_array[i,0] = topic_vec[i][0]
-      wc_array[i,1] = topic_vec[i][1]
-
-    idx = np.argsort(wc_array[:,1])
+    idx = np.argsort(np_topic_features[:,1])
     idx = idx[::-1]
-    wc_array = wc_array[idx]
+    np_topic_features = np_topic_features[idx]
 
-
-    topic_str_list = lda_model.print_topic(wc_array[0,0],n_topics)
-
-    if n_topics == 1:
+    topic_str_list = lda_model.print_topic(np_topic_features[0,0],n_topic_words)
+    if n_topic_words == 1:
         return [topic_str_list.split('*')[1]]
     else:
         return [t.split('*')[1] for t in topic_str_list.split('+')]
+
+  def convert_topic_vec(self, lda_model, token, dictionary=None):
+    #if token given list
+    if dictionary is None:
+      dictionary = self.dictionary
+
+    token = dictionary.doc2bow(token)
+
+    #token given dictionary all patterns
+    topic_array = np.concatenate(
+      (np.arange(lda_model.num_topics),np.zeros(lda_model.num_topics)))\
+      .reshape(2,lda_model.num_topics)\
+      .T
+    topic_list = np.array([list(topic) for topic in lda_model[token]])
+    for i, topic in enumerate(topic_list):
+      topic_array[i][1] = topic[1]
+
+    return topic_array
 
 
   def set_dictionary(self, path):
@@ -207,12 +218,9 @@ class Executor:
       self.dictionary = path
 
 
-
-
-
 if __name__ == '__main__':
-  path = ''
-  y_path = ''
+  path = '/Users/01010357/project/textio/data/next/job_listing.csv'
+  y_path = '/Users/01010357/project/textio/data/next/user_action.csv'
 
   lda_dict_path  = './lda.dict'
   lda_model_path = './lda.model'
