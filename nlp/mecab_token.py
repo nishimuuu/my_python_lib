@@ -1,35 +1,31 @@
-#-*-coding: utf-8 -*-
+# -*-coding: utf-8 -*-
 __author__ = 'nishimuuu'
-
-
 # write code here...
 class MeCabToken:
   def __init__(self, surface, feature):
-    self.surface = surface
-    features     = feature.split(',')
+    self.word =  surface
+    features = feature.split(',')
     error_cnt = 0
     try:
       self.surface_length = len(surface)
-      self.pos           = features[0]
-      self.pos_detail    = features[1]
-      self.pos_detail2   = features[2]
-      self.pos_detail3   = features[3]
-      self.conjugate     = features[4]
+      self.pos = features[0]
+      self.pos_detail = features[1]
+      self.pos_detail2 = features[2]
+      self.pos_detail3 = features[3]
+      self.conjugate = features[4]
       self.conjugate_fmt = features[5]
-      self.surface_base  = features[6]
+      self.surface_base = features[6]
       if self.surface_length >= 7:
-        self.reading       = features[7]
-        self.pronounce     = features[8]
+        self.reading = features[7]
+        self.pronounce = features[8]
     except IndexError:
       error_cnt += 1
 
     if not error_cnt <= 1:
-      print 'parse finish. error: '+ str(error_cnt)
-
-
+      print 'parse finish. error: ' + str(error_cnt)
 
   def get_word(self):
-    return self.surface
+    return self.word
 
   def get_pos(self):
     return self.pos
@@ -48,7 +44,6 @@ class MeCabToken:
 
   def get_conjugate_fmt(self):
     return self.conjugate_fmt
-
 
   def get_surface_base(self):
     return self.surface_base
